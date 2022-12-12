@@ -1,0 +1,33 @@
+FROM node:gallium-alpine
+
+WORKDIR /root/substrate-front-end-template
+
+# override base log level (info)
+ENV NPM_CONFIG_LOGLEVEL warn
+
+RUN apk add git
+# copy all except shown in .dockerignore
+COPY . .
+
+# Install latest Yarn 3.3.0
+# https://yarnpkg.com/getting-started/install
+# https://stackoverflow.com/a/74758714/3208553
+# note: requires git to be installed first
+RUN corepack enable \
+    && corepack prepare yarn@stable --activate \
+    && yarn set version 3.3.0 \
+    && yarn install
+
+ENV PATH=/root/substrate-front-end-template/node_modules/.bin:$PATH
+
+EXPOSE ${PORT}
+
+# add bash to support bash syntax instead of ash
+RUN apk update && apk add --update bash && rm -rf /var/cache/apk/*
+COPY ./docker/env.sh .
+COPY .env ./
+RUN chmod +x env.sh \
+    && /bin/bash -c /root/substrate-front-end-template/env.sh \
+    && cp env-config.js ./public/
+RUN cat ./public/env-config.js
+CMD ["yarn", "run", "start"]

@@ -14,7 +14,7 @@
     "polkadot-js"
   ],
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "WATCHPACK_POLLING=true react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "CI=true react-app-rewired test",
     "eject": "react-scripts eject",
@@ -81,5 +81,5 @@
       "last 1 safari version"
     ]
   },
-  "packageManager": "yarn@3.1.1"
+  "packageManager": "yarn@3.3.0"
 }

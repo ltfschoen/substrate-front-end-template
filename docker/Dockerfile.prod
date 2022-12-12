@@ -1,0 +1,52 @@
+FROM node:gallium-alpine AS builder
+
+ARG NODE_ENV=${NODE_ENV}
+ARG WEBSERVER_DIR="substrate-front-end-template"
+WORKDIR /root/${WEBSERVER_DIR}
+
+# override base log level (info)
+ENV NPM_CONFIG_LOGLEVEL warn
+
+RUN apk update && apk add --update git && rm -rf /var/cache/apk/*
+COPY package.json .
+COPY .env ./
+
+# copy all except shown in .dockerignore
+COPY . .
+
+# Install latest Yarn 3.3.0
+# https://yarnpkg.com/getting-started/install
+# https://stackoverflow.com/a/74758714/3208553
+# note: requires git to be installed first
+RUN corepack enable \
+    && corepack prepare yarn@stable --activate \
+    && yarn set version 3.3.0 \
+    && yarn install
+
+ENV PATH=/root/${WEBSERVER_DIR}/node_modules/.bin:$PATH
+
+RUN NODE_ENV=${NODE_ENV} yarn build
+
+# ===========================================================
+FROM nginx:stable-alpine
+
+ARG WEBSERVER_DIR="substrate-front-end-template"
+WORKDIR /usr/share/nginx/html
+
+COPY ./docker/env.sh .
+
+RUN chmod +x env.sh
+
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+# replace default nginx index.html file
+COPY --from=builder /root/${WEBSERVER_DIR}/build/index.html /usr/share/nginx/html/index.html
+# all other files in WEBSERVER_DIR subfolder 
+COPY --from=builder /root/${WEBSERVER_DIR}/build /usr/share/nginx/html
+
+EXPOSE 80
+
+# add bash to support bash syntax instead of ash
+RUN apk update && apk add --update bash && rm -rf /var/cache/apk/*
+
+# run nginx in debug mode (foreground)
+CMD ["/bin/bash", "-c", "/usr/share/nginx/html/env.sh && nginx -g \"daemon off;\""]

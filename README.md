@@ -38,6 +38,147 @@ yarn build
 
 and open `build/index.html` in your favorite browser.
 
+## Docker
+
+* reference: https://code.visualstudio.com/docs/devcontainers/containers
+* Go here to install extension VS Code Remote Try Node https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/vscode-remote-try-node
+* Go to Command Pallette (CMD+SHIFT+P)
+    * Type ">Dev Containers: Open Folder in Container"
+    .devcontainer/devcontainer.json
+
+* Click "Remote Explorer" icon on left of VS Code
+* Choose container, click "Connect to Container in New Window"
+* Wait for VS Code terminal to finish loading in new window
+* Open folder "/substrate-front-end-template"
+
+### Updates to Yarn
+
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+source ~/.bash_profile
+nvm install 16
+nvm use 16
+npm install yarn -g
+```
+
+Temporarily rename .yarnrc.yml. Install Yarn 3.3.0 Release
+```
+mv .yarnrc.yml .yarnrc.yml.old
+```
+
+Create .yarn folder with latest Yarn v3
+```
+yarn policies set-version 3.3.0
+```
+note: this generates .yarnrc.yml file with contents `yarnPath: .yarn/releases/yarn-3.3.0.cjs`
+
+Copy remainder of .yarnrc.yml.old back into .yarnrc.yml
+
+### Development
+
+#### Without Docker Compose
+
+**IGNORE** this section
+
+<!-- Build
+```
+bash ./docker/build.sh
+```
+
+Run
+```
+WEB="web"
+WEBSERVER_DIR="substrate-front-end-template"
+docker run \
+    --env WATCHPACK_POLLING=true \
+    --env PORT=8000 \
+    --env PUBLIC_URL="http://localhost" \
+    -it --rm -d -p 127.0.0.1:8000:8000 --name $WEB $WEBSERVER_DIR
+``` -->
+
+#### With Docker Compose
+
+Build
+```
+bash ./docker/build.sh
+```
+
+Run
+```
+DOCKER_BUILDKIT=0 docker compose --verbose -f docker-compose-dev.yml up --build --force-recreate
+```
+
+note:
+* `WATCHPACK_POLLING=true` is used in 5.x.x of react-scripts
+* `CHOKIDAR_USEPOLLING=true` is used in 4.0.3 of react-scripts
+
+Optional: Enter Container
+```
+docker exec -it $(docker ps -q) /bin/sh
+```
+
+Check Port Forwarding works. Below should output `0.0.0.0:8000->8000/tcp`
+```
+docker ps -a
+```
+
+Logs
+```
+docker logs -f $(docker ps -q)
+```
+
+Go to link in browser when logs say `webpack 5.70.0 compiled successfully`: http://localhost:8000
+
+### Production
+
+Build
+```
+NODE_ENV=production bash ./docker/build.sh
+```
+
+Run
+```
+WEB="web"
+WEBSERVER_DIR="substrate-front-end-template"
+docker run -it -e NODE_ENV=production -d -p 8000:80 --name $WEB $WEBSERVER_DIR
+```
+
+### Misc
+
+View containers and images
+```
+docker ps -a
+docker images -a
+```
+
+note: If you are going to delete the containers, consider retaining the pre-built images with
+tags like `gallium-alpine`.
+
+Delete all containers and images
+```
+docker stop $(docker ps -qa) && docker system prune -af --volumes
+```
+
+Delete all containers
+```
+docker rm $(docker ps -a -q)
+```
+
+Delete all images
+```
+docker rmi -f $(docker images -q)
+```
+
+Delete container and remove image
+
+```
+CONTAINER_ID=0fbd76b6b12d
+docker stop $CONTAINER_ID; docker rm $CONTAINER_ID;
+sleep 5
+IMAGE_ID=substrate-front-end-template_substrate-front-end-template
+docker rmi -f $IMAGE
+```
+
 ### Try the Hosted Version
 
 Connecting to Polkadot:<br/>
