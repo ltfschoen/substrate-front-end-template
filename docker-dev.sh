@@ -5,8 +5,16 @@
 
 trap "echo; exit" INT
 trap "echo; exit" HUP
-source .env \
-    && export APP PORT \
-    && printf "\n*** Started building Docker container. Please wait... \n***" \
+
+source $(dirname "$0")/.env.example \
+    && source $(dirname "$0")/.env \
+    && export APP_NAME=$(jq '.name' package.json | sed 's/\"//g') \
+    && export PORT_DEV \
+    && if [ "$NODE_ENV" != "development" ]; \
+        then printf "\nError: NODE_ENV should be set to development in .env\n"; \
+        kill "$PPID"; exit 1; fi \
+    && export PUBLIC_URL="http://localhost:${PORT_DEV}" \
+    && printf "\n*** Building Docker container. Please wait... \n***" \
     && DOCKER_BUILDKIT=0 docker compose -f docker-compose-dev.yml up --build -d
-printf "\n*** Finished building Docker container. Please open: http://localhost:${PORT}\n"
+
+printf "\n*** Finished building. Please open: http://localhost:${PORT_DEV}\n"

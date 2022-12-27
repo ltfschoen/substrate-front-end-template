@@ -1,8 +1,10 @@
 FROM node:gallium-alpine
 
-ARG APP=${APP}
-ARG APP_PATH=/usr/local/apps/${APP}
+ARG APP_PATH=/app
+ARG PORT_DEV=${PORT_DEV}
+# ARG PUBLIC_URL=${PUBLIC_URL}
 ENV PATH=${APP_PATH}/node_modules/.bin:$PATH
+ENV PUBLIC_URL=${PUBLIC_URL}
 WORKDIR ${APP_PATH}
 
 COPY package.json .
@@ -17,6 +19,6 @@ RUN corepack enable \
 
 COPY . .
 
-EXPOSE ${PORT}
+EXPOSE ${PORT_DEV}
 
 CMD ["yarn", "run", "start"]
